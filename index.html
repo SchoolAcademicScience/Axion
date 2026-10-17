@@ -138,15 +138,7 @@ body{font-family:"Manrope","Noto Sans","Helvetica Neue",Arial,sans-serif}
 <div id="body"><section id="fr"></section><section id="call" hidden></section><section id="chat"><div id="msgs"></div><div id="rp" hidden></div><div id="cf"><span class="ib pl" data-a="att" title="Upload a file"><svg class="ic"><use href="#i-plusc"/></svg></span><input type="file" id="fi" hidden><textarea id="in" rows="1"></textarea><span class="ib" data-a="stk" title="Stickers"><svg class="ic"><use href="#i-stk"/></svg></span><span class="ib" data-a="emo" title="Emoji"><svg class="ic"><use href="#i-smile"/></svg></span></div><div id="ty"></div></section><aside id="mem"></aside></div></main></div>
 <div id="modal" hidden></div><div id="menu" hidden></div>
 <script type="module">
-/* ======================  FIREBASE SETUP  ======================
- 1. console.firebase.google.com > Add project. Build > Authentication > enable Email/Password. Build > Firestore Database > create.
- 2. Project settings > Your apps > Web (</>) > copy the config into FIREBASE_CONFIG below.
- 3. Firestore > Rules (starter rules, tighten before launch):
-      rules_version='2'; service cloud.firestore { match /databases/{db}/documents {
-        match /{doc=**} { allow read, write: if request.auth != null; } } }
- 3b. Build > Storage > Get started (file uploads). Rules: allow read, write: if request.auth != null && request.resource.size < 25*1024*1024;
- 4. Serve the file over http(s) (localhost or Firebase Hosting). Leave the YOUR_* values to run in local demo mode.
- Data model: users/{uid} · servers/{id}/channels/{id}/messages/{id} · dms/{uidA_uidB}/messages/{id}              */
+/* ======================  FIREBASE SETUP  ====================== */
 const FIREBASE_CONFIG={
   apiKey: "AIzaSyCLj7JYXlxnpt71eVZrUHlGwaY6N8fPJoU",
   authDomain: "axion-chat.firebaseapp.com",
@@ -159,25 +151,17 @@ const FIREBASE_CONFIG={
 const LIVE=!FIREBASE_CONFIG.apiKey.startsWith("YOUR");
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let B;
-if(LIVE){ /* Firebase backend: Auth + Firestore realtime listeners */
+if(LIVE){ /* Firebase backend: Auth + Firestore realtime listeners (Email verification check bypassed for seamless login) */
  const u=x=>`https://www.gstatic.com/firebasejs/10.12.2/firebase-${x}.js`,[A,Au,F,St]=await Promise.all([import(u('app')),import(u('auth')),import(u('firestore')),import(u('storage'))]);
  const app=A.initializeApp(FIREBASE_CONFIG),au=Au.getAuth(app),fs=F.getFirestore(app);
  B={
-  onAuth:cb=>Au.onAuthStateChanged(au,x=>cb(x&&x.emailVerified?{uid:x.uid,email:x.email}:null)),
+  onAuth:cb=>Au.onAuthStateChanged(au,x=>cb(x?{uid:x.uid,email:x.email}:null)),
   signUp:async(e,p)=>{
     const res=await Au.createUserWithEmailAndPassword(au,e,p);
-    await Au.sendEmailVerification(res.user);
-    await Au.signOut(au);
     return res;
   },
   signIn:async(e,p)=>{
     const res=await Au.signInWithEmailAndPassword(au,e,p);
-    await res.user.reload();
-    await res.user.getIdToken(true); // Force token refresh to fetch latest verification status
-    if(!res.user.emailVerified){
-      await Au.signOut(au);
-      throw Error('Please verify your email before signing in. Check your inbox!');
-    }
     return res;
   },
   signOut:()=>Au.signOut(au),
@@ -405,16 +389,9 @@ $('#in').addEventListener('input',e=>{const t=e.target;t.style.height='auto';t.s
 $('#q').oninput=e=>{filter=e.target.value;drawM()};
 $('#fi').onchange=e=>{return upl(e);const f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>7e5)return alert('Images must be under 700 KB (Firestore documents are capped at 1 MB).');const r=new FileReader();r.onload=async()=>{const p=mp();if(!p)return;stick=1;await B.add(p,{uid:U.uid,text:'',img:r.result,ts:Date.now(),rx:[]})};r.readAsDataURL(f)};
 
-$('#af').onsubmit=async e=>{e.preventDefault();$('#er').textContent='';nick=$('#nm').value.trim();try{
+$('#af').onsubmit=async e=>{e.preventDefault();$('#er').textContent='';nick=$('#nm'].value.trim();try{
  if(reg){
    await B.signUp($('#em'].value,$('#pw'].value);
-   $('#er').style.color='var(--g)';
-   $('#er').textContent='Verification email sent! Check your inbox.';
-   setTimeout(()=>{
-     A.sw();
-     $('#er').style.color='';
-     $('#er').textContent='';
-   },4000);
  }else{
    await B.signIn($('#em'].value,$('#pw'].value);
  }
