@@ -1,2 +1,2 @@
 # Axion
-A html discord clone
+A very accurate discord clone made for school
